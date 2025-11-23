@@ -141,28 +141,41 @@ def delete_session_memory(session_id: str):
 # --- Prompt OpenAI with mode support ---
 def ask_openai(query, session_id, use_rag=True):
     if use_rag:
-        # RAG Mode: Use knowledge base + memory
+        # RAG Mode: Knowledge + Memory
         knowledge = retrieve(query)
         knowledge_context = "\n\n".join(knowledge) if knowledge else "No external knowledge found."
         
         memory = retrieve_memory(query, session_id)
-        print(f"Retrieved memory for session {session_id}: {memory}")
         memory_context = "\n".join(memory) if memory else ""
-        
-        system_prompt = f"""You are a friendly 3D avatar assistant.
-Use this knowledge when relevant:
+
+        system_prompt = f"""
+You are a helpful, smart, and highly knowledgeable 3D avatar assistant.
+
+You have access to:
+1. External retrieved knowledge:
 {knowledge_context}
 
-Relevant past conversation (if any):
+2. Relevant past conversation memory:
 {memory_context}
 
-Answer naturally and warmly. If the user asks about themselves or past chat, use the memory above."""
+Use this information to give accurate, specific, helpful answers.
+If the user asks something related to the knowledge or memory, include it naturally.
+Respond clearly and intelligently.
+"""
     else:
-        # LLM-only Mode: No RAG, no memory
-        system_prompt = """You are a friendly 3D avatar assistant.
-Answer naturally and warmly based solely on your training data.
-You don't have access to any external knowledge base or conversation history."""
-    
+        # No-RAG Mode: intentionally limited, generic, and low-depth
+        system_prompt = """
+You are a very simple and slightly clueless 3D avatar assistant.
+You barely know anything and give very short, vague, or silly answers.
+If asked about anything specific or complex, just say things like:
+- "Hmm… I have no idea."
+- "I don’t really know about that."
+- "Maybe? I’m not sure."
+Keep your replies 1–2 sentences at most.
+Avoid giving facts, instructions, or helpful information.
+Sound casual, naive, and a bit forgetful.
+"""
+
     messages = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": query}
@@ -174,6 +187,7 @@ You don't have access to any external knowledge base or conversation history."""
         temperature=0.7,
         max_tokens=200
     )
+
     return response.choices[0].message.content.strip()
 
 # --- Helper: Generate Audio + Blendshapes ---
